@@ -11,7 +11,7 @@ class Config:
         self.config_file = config_file if config_file else os.getenv('CONFIG_FILE')
         self.retriever = os.getenv('SEARCH_RETRIEVER', "tavily")
         self.embedding_provider = os.getenv('EMBEDDING_PROVIDER', 'openai')
-        self.llm_provider = os.getenv('LLM_PROVIDER', "openai")
+        self.llm_provider = os.getenv('LLM_PROVIDER', "chatglm3")
         self.fast_llm_model = os.getenv('FAST_LLM_MODEL', "gpt-3.5-turbo-16k")
         self.smart_llm_model = os.getenv('SMART_LLM_MODEL', "gpt-4-turbo")
         self.fast_token_limit = int(os.getenv('FAST_TOKEN_LIMIT', 2000))

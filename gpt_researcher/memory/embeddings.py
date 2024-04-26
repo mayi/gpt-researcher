@@ -19,7 +19,9 @@ class Memory:
             case "huggingface":
                 from langchain.embeddings import HuggingFaceEmbeddings
                 _embeddings = HuggingFaceEmbeddings()
-
+            case "text-embeddings-inference":
+                from langchain_community.embeddings import HuggingFaceHubEmbeddings
+                _embeddings = HuggingFaceHubEmbeddings(model="http://edgegpu-proxy-003.gpumall.com:60161/bge")
             case _:
                 raise Exception("Embedding provider not found.")
 

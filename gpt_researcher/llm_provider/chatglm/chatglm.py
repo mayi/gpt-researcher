@@ -7,7 +7,7 @@ from langchain_community.llms.chatglm3 import ChatGLM3
 
 
 class ChatGLMProvider:
-    def __init__(self, model, temperature, max_tokens):
+    def __init__(self, model, temperature, max_tokens=8000):
         self.model = "ChatGLM3"
         self.temperature = temperature
         self.max_tokens = max_tokens
@@ -22,17 +22,31 @@ class ChatGLMProvider:
         return endpoint_url
 
 
+    
     def initialize_llm_chain(self, messages: list):
         template = "{input}"
         prompt = PromptTemplate.from_template(template)
 
+        prefix_messages = [
+            SystemMessage(content="You are an intelligent AI assistant, named ChatGLM3.")
+        ]
+        
         llm = ChatGLM3(
             endpoint_url=self.get_endpoint_url(),
-            max_tokens=self.max_tokens,
-            prefix_messages=messages,
+            max_tokens=8000,
+            prefix_messages=prefix_messages,
             top_p=0.9
         )
         return LLMChain(prompt=prompt, llm=llm)
+
+    def get_llm_model(self, prefix_messages):
+        llm = ChatGLM3(
+            endpoint_url=self.get_endpoint_url(),
+            max_tokens=8000,
+            prefix_messages=self.convert_messages(prefix_messages),
+            top_p=0.9
+        )
+        return llm
 
     def convert_messages(self, messages):
         """
@@ -50,6 +64,7 @@ class ChatGLMProvider:
         `SystemMessage` object if the role is "system" or a new `HumanMessage` object if the role is
         "user". The function then returns a list of these converted messages.
         """
+        print(f"messages type: {type(messages)}")
         converted_messages = []
         for message in messages:
             if message["role"] == "system":
@@ -61,12 +76,25 @@ class ChatGLMProvider:
 
         return converted_messages
 
-    async def get_chat_response(self, messages, stream=False, websocket=None):
-        system_messages = [message for message in messages if message["role"] == "system"]
-        human_messages = [message for message in messages if message["role"] == "user"]
-        llm_chain = self.initialize_llm_chain(messages=system_messages)
-        if not stream:
-            output = llm_chain.invoke({"input": human_messages})
+    def get_ai_response(self, llm_chain, user_message):
+        ai_response = llm_chain.invoke({"input": user_message})
+        return ai_response
 
+    async def get_chat_response(self, messages, stream=False, websocket=None):
+        '''
+        messages = self.convert_messages(messages)
+        llm_chain = self.initialize_llm_chain(messages=messages)
+        if not stream:
+            print(f"send to ChatGLM3: {messages}")
+            output = self.get_ai_response(llm_chain, messages[-1].content)
+            print(f"response from ChatGLM3: {output}")
             return output['text']
+        '''
+        if not stream:
+            llm = self.get_llm_model(prefix_messages=messages)
+
+            output = llm.invoke(input=messages)
+            print(f"response from ChatGLM3: {output}")
+
+            return output
 
