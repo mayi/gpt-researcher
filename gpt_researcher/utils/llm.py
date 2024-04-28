@@ -30,7 +30,9 @@ def get_provider(llm_provider):
         case "chatglm3":
             from ..llm_provider import ChatGLMProvider
             llm_provider = ChatGLMProvider
-
+        case "zhipu":
+            from ..llm_provider import ZhipuProvider
+            llm_provider = ZhipuProvider
         case _:
             raise Exception("LLM provider not found.")
 
