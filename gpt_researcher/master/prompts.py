@@ -23,7 +23,9 @@ def generate_search_queries_prompt(question: str, parent_query: str, report_type
            f'Use the current date if needed: {datetime.now().strftime("%B %d, %Y")}.\n' \
            f'Also include in the queries specified task details such as locations, names, etc.\n' \
            f'You MUST respond with a list of strings in the following json array format: ["query 1", "query 2", "query 3"].\n' \
-           f'do not return introduce text, no more extra infomation just return the json array, here is your response: \n'
+           f'do not return introduce text, no more extra infomation just return the json array.\n'\
+           f'Example: task is "Who is the tallest human?" response is ["tallest person ever", "world\'s tallest man", "record-breaking height"]\n' \
+           f'here is your response: \n'
 
 
 def generate_report_prompt(question, context, report_format="apa", total_words=1000):

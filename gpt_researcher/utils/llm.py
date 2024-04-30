@@ -10,6 +10,9 @@ from fastapi import WebSocket
 from langchain.output_parsers import PydanticOutputParser
 from langchain.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
+from langchain_core.messages import BaseMessage
+import tiktoken
+from typing import List
 
 from gpt_researcher.master.prompts import auto_agent_instructions, generate_subtopics_prompt
 
@@ -64,9 +67,17 @@ async def create_chat_completion(
     # validate input
     if model is None:
         raise ValueError("Model cannot be None")
-    if max_tokens is not None and max_tokens > 8001:
+    max_tokens_limit = 8001
+    if model == "chatglm3":
+        max_tokens_limit = 32000
+    if max_tokens is not None and max_tokens > max_tokens_limit:
         raise ValueError(
-            f"Max tokens cannot be more than 8001, but got {max_tokens}")
+            f"Max tokens cannot be more than {max_tokens_limit}, but got {max_tokens}")
+    if model == "chatglm3":
+        num_tokens = get_num_tokens_from_messages(messages, "cl100k_base")
+        if num_tokens > max_tokens_limit:
+            raise ValueError(
+                f"Number of tokens in messages is {num_tokens}, but max tokens is {max_tokens_limit}")
 
     # Get the provider from supported providers
     ProviderClass = get_provider(llm_provider)
@@ -150,3 +161,29 @@ async def construct_subtopics(task: str, data: str, config, subtopics: list = []
     except Exception as e:
         print("Exception in parsing subtopics : ", e)
         return subtopics
+
+def num_tokens_from_string(text: str, encoding_name: str) -> int:
+    """Calculate the number of tokens in a string of text.
+    Args:
+        text (str): The text to count tokens in.
+        encoding_name (str): The encoding name to use.
+    Returns:
+        int: The number of tokens in the text.
+    """
+    encoding = tiktoken.get_encoding(encoding_name)
+    num_tokens = len(encoding.encode(text))
+    return num_tokens
+
+def get_num_tokens_from_messages(messages: List[BaseMessage], encoding_name: str) -> int:
+    """Calculate the number of tokens in a list of messages.
+    Args:
+        messages (List[BaseMessage]): The messages to count tokens in.
+        encoding_name (str): The encoding name to use.
+    Returns:
+        int: The number of tokens in the messages.
+    """
+    num_tokens = 0
+    for message in messages:
+        if 'content' in message:
+            num_tokens += num_tokens_from_string(message['content'], encoding_name)
+    return num_tokens
