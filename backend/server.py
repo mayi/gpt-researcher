@@ -6,6 +6,7 @@ import json
 import os
 from backend.websocket_manager import WebSocketManager
 from backend.utils import write_md_to_pdf, write_md_to_word
+from contextlib import asynccontextmanager
 
 
 class ResearchRequest(BaseModel):
@@ -13,8 +14,16 @@ class ResearchRequest(BaseModel):
     report_type: str
     agent: str
 
+# Dynamic directory for outputs once first research is run
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    if not os.path.isdir("outputs"):
+        os.makedirs("outputs")
+    app.mount("/outputs", StaticFiles(directory="outputs"), name="outputs")
+    yield
 
-app = FastAPI()
+
+app = FastAPI(lifespan=lifespan)
 
 app.mount("/site", StaticFiles(directory="./frontend"), name="site")
 app.mount("/static", StaticFiles(directory="./frontend/static"), name="static")
@@ -23,13 +32,6 @@ templates = Jinja2Templates(directory="./frontend")
 
 manager = WebSocketManager()
 
-
-# Dynamic directory for outputs once first research is run
-@app.on_event("startup")
-def startup_event():
-    if not os.path.isdir("outputs"):
-        os.makedirs("outputs")
-    app.mount("/outputs", StaticFiles(directory="outputs"), name="outputs")
 
 @app.get("/")
 async def read_root(request: Request):
